@@ -1,0 +1,113 @@
+ Variables are provided through the inventory, by variable files, overwritten on the command line and set in Tower.
+ 
+ Variables & Loops
+ -----------------------
+ vars:
+     fl: [ alpha, beta]
+ tasks:
+  - name: copy files
+    copy: src={{ item }} dest=/tmp/{{ item }}
+    with_items: {{ fl }}
+    
+  
+Variables & Templates
+----------------------
+$ cat template.j2
+My host name is {{ ansible_hostname }}.
+
+tasks:
+  - name: copy template
+    template: src=template.j2 dest="/tmp/abcapp.conf"
+
+In templates variables are also referenced by {{ }}.
+
+Variables in Conditions
+----------------------------
+tasks:
+  - name: install Apache on Solaris
+    pkg5: name=web/server/apache-24
+    when: ansible_os_family == "Solaris"
+ 
+Variables from Systems
+------------------------
+Facts gatering
+$ ansible neon -m setup
+
+Variables can also be set by dumping specialized files onto the system: when Ansible accesses a remote system it checks for the 
+directory /etc/ansible/facts.d and all files ending in .fact are read. 
+The files can be of various formats – INI, JSON, or even executables which return JSON code. 
+$ cat /etc/ansible/facts.d/variables.fact 
+[system]
+foo=bar
+dim=dum
+
+Variables from command line
+-----------------------------
+$ ansible-playbook --extra-vars "cli_var=production" system-setup.yml
+
+$ cat template.j2
+environment: {{ cli_var }}.
+
+Variables in playbook
+-----------------------
+...
+hosts: all 
+vars:
+  play_var: bar 
+ 
+tasks:
+...
+    OR
+...
+hosts: all
+include_vars: setupvariables.yml
+ 
+tasks:
+...
+    OR
+...
+hosts: all
+include_vars: "{{ ansible_hostname }}.yml"
+ 
+tasks:
+...
+
+Variables in Inventory File
+-------------------------------
+[clients]
+helium intevent_var=helium_123
+neon invent_var=bar
+
+It is also possible to set variables for entire host groups:
+[clients]
+helium
+neon
+ 
+[clients:vars]
+invent_var=group-foo
+
+Register Variables for tasks result
+--------------------------------------
+  tasks:
+    - name: start service
+      service: name=httpd state=started
+      ignore_errors: True
+      register: service_result
+ 
+    - name: shutdown
+      command: "shutdown -h +1m"
+      when: service_result | failed
+ 
+ Accessing Variables of Other Hosts
+ ------------------------------------
+ Last but not least it might be interesting to access the variables (read: facts) of other hosts.
+ This can of course only be done if the facts are actually available.
+ The following template first accesses the host name of the machine “tower” and afterwards collects all the epoch data of all machines:
+
+Tower name is: {{ hostvars['tower']['ansible_hostname'] }}
+The epochs of the clients are:
+{% for host in groups['clients'] %}
+- {{ hostvars[host]['ansible_date_time']['epoch'] }}
+{% endfor %}
+
+This comes in handy in simple cases like filling the /etc/hosts
