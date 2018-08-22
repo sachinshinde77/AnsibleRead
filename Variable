@@ -1,5 +1,13 @@
  Variables are provided through the inventory, by variable files, overwritten on the command line and set in Tower.
  
+ defaults/main.yaml:  they are default variables if you don't specify host related value.
+ -------------------
+ nginx_service_name: nginx
+ nginx_yum_packages:
+  - epel-release
+  - nginx
+ nginx_port: 80
+
  Variables & Loops
  -----------------------
  vars:
@@ -49,7 +57,7 @@ $ cat template.j2
 environment: {{ cli_var }}.
 
 Variables in playbook
------------------------
+---------------------------
 ...
 hosts: all 
 vars:
@@ -71,7 +79,27 @@ include_vars: "{{ ansible_hostname }}.yml"
  
 tasks:
 ...
+   OR
+- hosts: localhost
+  vars_files:
+    - "vars/{{ name }}.yml"  --- vars is directory in which variable file is save
+  tasks:
+    - debug: var={{ foo }}
+   
 
+- hosts: all
+  vars:
+    python:
+      Designer: 'Guido van Rosum'
+      Developer: 'Python Software Foundation'
+      OS: 'Cross-platform'
+  tasks:
+  - name: Ansible Dictionary Example
+    debug:
+      msg: "{{python['Designer'] }}"
+      OR
+      msg: "{{python.Designer }}"
+      
 Variables in Inventory File
 -------------------------------
 [clients]
@@ -111,3 +139,42 @@ The epochs of the clients are:
 {% endfor %}
 
 This comes in handy in simple cases like filling the /etc/hosts
+
+Multiline Variables
+---------------------
+You can use the ‘|’ operator if you want the new line characters to be included. If you do not want the new line character, 
+and you just want to use it for easy understanding during editing then use ‘>’ operator.
+
+- hosts: all
+  vars:
+    include_newlines_example: |
+            The new line charaters
+            will appear 
+
+    ignore_newlines_example2: >
+            The new line character will 
+            be removed. Useful when editing 
+            lines
+            
+  Variables in Role Directory Structure
+  ---------------------------------------
+webservers.yml
+fooservers.yml
+roles/
+   common/
+     tasks/
+     handlers/
+     files/
+     templates/
+     vars/
+     defaults/
+     meta/
+   webservers/
+     tasks/
+     defaults/
+     meta/
+   
+   Each directory above should have maim.yml
+   
+   
+   
