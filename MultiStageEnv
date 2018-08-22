@@ -95,4 +95,54 @@ More importantly, relying on these techniques makes them mandatory. Every playbo
 correct variable files in the correct order. Playbooks without this will be unable to use the associated variables. 
 
 Ansible Recommended Strategy: Using Groups and Multiple Inventories
+The recommended approach is to work with multistage environments by completely separating each operating environment. Instead of 
+maintaining all of your hosts within a single inventory file, an inventory is maintained for each of your individual environments.
+Separate group_vars directories are also maintained.
 
+.
+├── ansible.cfg
+├── environments/                             # Parent directory for our environment-specific directories
+│   │
+│   ├── 000_cross_env_vars
+│   │
+│   ├── dev/                                  # Contains all files specific to the dev environment
+│   │   ├── group_vars/                       # dev specific group_vars files
+│   │   │   ├── all/
+│       │   │   ├── 000_cross_env_vars -> ../../../000_cross_env_vars
+│   │   │   │   └── env_specific
+│   │   │   ├── db
+│   │   │   └── web
+│   │   └── hosts                             # Contains only the hosts in the dev environment
+│   │
+│   ├── prod/
+│   │   ├── group_vars/
+│   │   │   ├── all/
+│   │   │   │   ├── 000_cross_env_vars -> ../../../000_cross_env_vars
+│   │   │   │   └── env_specific
+│   │   │   ├── db
+│   │   │   └── web
+│   │   └── hosts
+│   │
+│   └── stage/
+│       ├── group_vars/
+│       │   ├── all/
+│       │   │   ├── 000_cross_env_vars -> ../../../000_cross_env_vars
+│       │   │   └── env_specific
+│       │   ├── db
+│       │   └── web
+│       └── hosts
+│
+├── playbook.yml
+│
+└── . . .
+
+Both files (000_cross_env_vars & env_specific) in all directory of group_vars will be applied to all hosts within the environment.
+
+$ansible -i environments/dev -m ping
+
+As mentioned above, it is recommended to set your development environment as the default inventory. Notice how we can select the entire
+environment directory instead of the hosts file it contains:
+
+$nano ansible.cfg
+[defaults]
+inventory = ./environments/dev
