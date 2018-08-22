@@ -1,0 +1,36 @@
+Tags
+It may be desired to only run certain tasks and to control which tasks get run from cli.
+
+  tasks:
+    - name: Print Memory and CPU Cores 
+      debug: 
+        msg: "Host {{ ansible_hostname }} has {{ ansible_memtotal_mb }} MB Memory and {{ ansible_processor_cores }} CPU Cores."
+      tags:
+        - info
+        
+  $ ansible-playbook add_user.yml -u ansible -b -i ./inventory --tags 'info'
+  
+Blocks
+In order to handle errors in Ansible blocks are often used. The block statement defines the main task to run. 
+The rescue statement defines a task that should run if an error is encountered inside the block.
+
+    - block:
+        - name: Add a user
+          user:
+            name: "{{ item }}"
+            shell: /bin/bash
+            generate_ssh_keys: yes
+            state: present
+          with_items: "{{ users }}"
+          when: item is defined
+          notify:
+            - 'Configure sudo permission'
+      rescue:
+        - name: revert user add
+          user: 
+            name: "{{ item }}" 
+            state: absent 
+          with_items: "{{ users }}" 
+          when: item is defined   
+   You can simulate this by adding a new user to my_vars.yml file and running without the -b (become root) option.
+     $ ansible-playbook add_user.yml -u ansible -i ./inventory
