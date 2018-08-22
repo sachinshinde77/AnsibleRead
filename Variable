@@ -1,63 +1,46 @@
  Variables are provided through the inventory, by variable files, overwritten on the command line and set in Tower.
  
  defaults/main.yaml:  they are default variables if you don't specify host related value.
- -------------------
+ ---------------------------------------------------
  nginx_service_name: nginx
  nginx_yum_packages:
   - epel-release
   - nginx
  nginx_port: 80
 
- Variables & Loops
- -----------------------
- vars:
-     fl: [ alpha, beta]
- tasks:
-  - name: copy files
-    copy: src={{ item }} dest=/tmp/{{ item }}
-    with_items: {{ fl }}
-    
-  
-Variables & Templates
-----------------------
-$ cat template.j2
-My host name is {{ ansible_hostname }}.
+Host Variables
+-----------------------------------------------------
+For host specific needs
+Ad-hoc way -- in inventory file
+[atlanta]
+host1  http_port=80 maxRequestsPerChild=808
+host2  http_port=303 maxRequestsPerChild=909
 
-tasks:
-  - name: copy template
-    template: src=template.j2 dest="/tmp/abcapp.conf"
+Best Practice -- host_vars folder
+---
+# file: /etc/ansible/host_vars/xyz.boston.example.com
+ntp_server: override.example.com
 
-In templates variables are also referenced by {{ }}.
+Group Variables
+-----------------------------------------------------
+Ad-hoc way -- inventory file
+[atlanta]
+host1
+host2
 
-Variables in Conditions
-----------------------------
-tasks:
-  - name: install Apache on Solaris
-    pkg5: name=web/server/apache-24
-    when: ansible_os_family == "Solaris"
- 
-Variables from Systems
-------------------------
-Facts gatering
-$ ansible neon -m setup
+[atlanta:vars]
+ntp_server=ntp.atlanta.example.com
+proxy=proxy.atlanta.example.com
 
-Variables can also be set by dumping specialized files onto the system: when Ansible accesses a remote system it checks for the 
-directory /etc/ansible/facts.d and all files ending in .fact are read. 
-The files can be of various formats – INI, JSON, or even executables which return JSON code. 
-$ cat /etc/ansible/facts.d/variables.fact 
-[system]
-foo=bar
-dim=dum
+Best Practice --  group_vars folder
+For example, you can define variables for group raleigh in file /etc/ansible/group_vars/raleigh, using the following lines:
+---
+ntp_server: acme.example.org
+database_server: storage.example.org
 
-Variables from command line
------------------------------
-$ ansible-playbook --extra-vars "cli_var=production" system-setup.yml
-
-$ cat template.j2
-environment: {{ cli_var }}.
-
-Variables in playbook
----------------------------
+Playbook Variables
+-------------------------------------------------
+Ad-hoc way -- vars attribute
 ...
 hosts: all 
 vars:
@@ -66,6 +49,20 @@ vars:
 tasks:
 ...
     OR
+- hosts: all
+  vars:
+    python:
+      Designer: 'Guido van Rosum'
+      Developer: 'Python Software Foundation'
+      OS: 'Cross-platform'
+  tasks:
+  - name: Ansible Dictionary Example
+    debug:
+      msg: "{{python['Designer'] }}"
+      OR
+      msg: "{{python.Designer }}"
+
+Best Practice -- vars_files attribute
 ...
 hosts: all
 include_vars: setupvariables.yml
@@ -87,21 +84,58 @@ tasks:
     - debug: var={{ foo }}
    
 
-- hosts: all
-  vars:
-    python:
-      Designer: 'Guido van Rosum'
-      Developer: 'Python Software Foundation'
-      OS: 'Cross-platform'
-  tasks:
-  - name: Ansible Dictionary Example
-    debug:
-      msg: "{{python['Designer'] }}"
-      OR
-      msg: "{{python.Designer }}"
+ Variables & Loops
+ ---------------------------------------------------------
+ vars:
+     fl: [ alpha, beta]
+ tasks:
+  - name: copy files
+    copy: src={{ item }} dest=/tmp/{{ item }}
+    with_items: {{ fl }}
+    
+  
+Variables & Templates
+----------------------------------------------------------
+$ cat template.j2
+My host name is {{ ansible_hostname }}.
+
+tasks:
+  - name: copy template
+    template: src=template.j2 dest="/tmp/abcapp.conf"
+
+In templates variables are also referenced by {{ }}.
+
+Variables in Conditions
+------------------------------------------------------
+tasks:
+  - name: install Apache on Solaris
+    pkg5: name=web/server/apache-24
+    when: ansible_os_family == "Solaris"
+ 
+Variables from Systems
+-------------------------------------------------------
+Facts gatering
+$ ansible neon -m setup
+
+Variables can also be set by dumping specialized files onto the system: when Ansible accesses a remote system it checks for the 
+directory /etc/ansible/facts.d and all files ending in .fact are read. 
+The files can be of various formats – INI, JSON, or even executables which return JSON code. 
+$ cat /etc/ansible/facts.d/variables.fact 
+[system]
+foo=bar
+dim=dum
+
+Variables from command line
+------------------------------------------------------------
+$ ansible-playbook --extra-vars "cli_var=production" system-setup.yml
+
+$ cat template.j2
+environment: {{ cli_var }}.
+
+
       
 Variables in Inventory File
--------------------------------
+-----------------------------------------------------------
 [clients]
 helium intevent_var=helium_123
 neon invent_var=bar
@@ -115,7 +149,7 @@ neon
 invent_var=group-foo
 
 Register Variables for tasks result
---------------------------------------
+----------------------------------------------------------
   tasks:
     - name: start service
       service: name=httpd state=started
