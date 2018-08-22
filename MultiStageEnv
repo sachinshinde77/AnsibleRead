@@ -1,0 +1,47 @@
+For example, the memory requirements for a development server might be different than those for staging and production and 
+it's important to have explicit control over how the variables that represent those requirements are prioritized.
+
+Using Group Variables
+At first glance, it may appear that group variables provide all of the separation between environments that Ansible requires.
+You can designate certain servers as belonging to your development environment, and others can be assigned to the staging and production 
+areas.
+
+If the same variable is set by more than one group for a host, Ansible has no way of explicitly specifying precedence.
+Instead, Ansible uses the last loaded value. Since Ansible evaluates groups alphabetically, the variable associated with whichever group 
+name happens to be last in dictionary ordering will win.
+
+Using Group Childern to Establish hierarchy
+Ansible allows you to assign groups to other groups using the [groupname:children] syntax in the inventory. This gives you the ability to
+name certain groups members of other groups. Children groups have the ability to override variables set by the parent groups.
+
+Typically, this is used for natural classification. For example, we could have a group called environments that includes the groups dev, 
+stage, prod. This means we could set variables in the environment group and override them in the dev group.
+
+This usage does not solve the problem of group intersection since child groups only override their parents. Child groups can override
+variables within the parent, but the above organization has not established any relationship between group categories, like environments 
+and functions. The variable precedence between the two categories is still undefined.
+
+Example
+. . .
+[function:children]
+web
+database
+loadbalancer
+region
+
+[region:children]
+nyc
+sfo
+environments
+
+[environments:children]
+dev
+stage
+prod
+
+We've established a hierarchy here that allows regional variables to override the functional variables since the region group is a 
+child of the function group. Likewise, variables set in the environments groups can override any of the others. This means that if we
+set the same variable to a different value in the dev, nyc, and web groups, a host belonging to each of these would use the variable 
+from dev.
+
+
