@@ -44,4 +44,55 @@ child of the function group. Likewise, variables set in the environments groups 
 set the same variable to a different value in the dev, nyc, and web groups, a host belonging to each of these would use the variable 
 from dev.
 
+Using Ansible Constructs that Allow Explicit Loading Order
+There are a few constructs within Ansible that allow explicit variable load ordering, namely vars_files and include_vars. 
+These can be used within Ansible plays to explicitly load additional variables in the order defined within the file. 
+The vars_files directive is valid within the context of a play, while the include_vars module can be used in tasks.
+
+The general idea is to set only basic identifying variables in group_vars and then leverage these to load the correct variable files 
+with the rest of the desired variables.
+
+group_vars/dev
+---
+env: dev
+
+group_vars/stage
+---
+env: stage
+
+group_vars/web
+---
+function: web
+
+We would then have a separate vars file that defines the important variables for each group. These are typically kept in a separate 
+vars directory for clarity. Unlike group_vars files, when dealing with include_vars, files must include a .yml file extension.
+
+vars/dev.yml
+---
+server_memory_size: 512mb
+
+vars/prod.yml
+---
+server_memory_size: 4gb
+
+vars/web.yml
+---
+server_memory_size: 1gb
+
+We could then create a playbook that explicitly loads the correct vars file based on the values assigned to the host from the 
+group_vars files
+
+---
+- name: variable precedence test
+  hosts: all
+  vars_files:
+    - "vars/{{ env }}.yml"
+    - "vars/{{ function }}.yml"
+  tasks:
+    - debug: var=server_memory_size
+
+More importantly, relying on these techniques makes them mandatory. Every playbook will require a section that explicitly loads the 
+correct variable files in the correct order. Playbooks without this will be unable to use the associated variables. 
+
+Ansible Recommended Strategy: Using Groups and Multiple Inventories
 
