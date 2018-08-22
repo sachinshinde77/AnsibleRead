@@ -62,27 +62,32 @@ tasks:
       OR
       msg: "{{python.Designer }}"
 
-Best Practice -- vars_files attribute
-...
-hosts: all
-include_vars: setupvariables.yml
- 
-tasks:
-...
-    OR
-...
-hosts: all
-include_vars: "{{ ansible_hostname }}.yml"
- 
-tasks:
-...
-   OR
+Best Practice -- vars_files or include_vars attribute
+The vars_files directive is valid within the context of a play, while the include_vars module can be used in tasks.
+
 - hosts: localhost
   vars_files:
     - "vars/{{ name }}.yml"  --- vars is directory in which variable file is save
   tasks:
     - debug: var={{ foo }}
-   
+
+   OR
+...
+hosts: all
+tasks:
+  include_vars: 
+    file: setupvariables.yml
+ 
+
+...
+    OR
+...
+hosts: all
+tasks:
+include_vars: 
+  file: "{{ ansible_hostname }}.yml"
+
+...
 
  Variables & Loops
  ---------------------------------------------------------
