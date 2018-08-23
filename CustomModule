@@ -11,4 +11,83 @@ Here are some basic considerations of writing Ansible modules:
 - Good practice is to write a multi-line at the start of your module describing parameters and how to run it. This is especially important
   if you want to open source it.
   
+Calling a custom module is just like calling a built in one, but you do need to somehow let Ansible know about the module. 
+There are a couple alternatives:
+- ansible-playbook -M /path/to/custom/modules_dir/
+- ansible-playbook --module-path /path/to/custom/modules_dir/
+- export ANSIBLE_LIBRARY=/path/to/custom/modules_dir/
+- use ansible.cfg library setting
+- use library dir inside a role — this is useful if you want to ship your module inside a role
+
+Example Code
+================
+#!/usr/bin/python
+
+from ansible.module_utils.basic import *
+
+def github_repo_present(data):
+	has_changed = False
+	meta = {"present": "not yet implemented"}
+	return (has_changed, meta)
+
+def github_repo_absent(data=None):
+	has_changed = False
+	meta = {"absent": "not yet implemented"}
+  return (has_changed, meta)
+
+def main():
+
+    fields = {
+        "github_auth_key": {"required": True, "type": "str"},
+        "name": {"required": True, "type": "str"},
+        "description": {"required": False, "type": "str"},
+        "private": {"default": False, "type": "bool"},
+        "has_issues": {"default": True, "type": "bool"},
+        "has_wiki": {"default": True, "type": "bool"},
+        "has_downloads": {"default": True, "type": "bool"},
+        "state": {
+            "default": "present",
+            "choices": ['present', 'absent'],
+            "type": 'str'
+        },
+    }
+
+    choice_map = {
+        "present": github_repo_present,
+        "absent": github_repo_absent,
+    }
+
+    module = AnsibleModule(argument_spec=fields)
+    is_error, has_changed, result = choice_map.get(
+        module.params['state'])(module.params)
+
+    if not is_error:
+        module.exit_json(changed=has_changed, meta=result)
+    else:
+        module.fail_json(msg="Error deleting repo", meta=result)
+
+
+if __name__ == '__main__':
+    main()
+
+playbool.yml
+- hosts: localhost
+  vars: 
+    - github_token: "..."
+  tasks:
+    - name: Create a github Repo
+      github_repo:
+        github_auth_key: "{{github_token}}"
+        name: "Hello-World"
+        description: "This is your first repository"
+        private: yes
+        has_issues: no
+        has_wiki: no
+        has_downloads: no
+
+    - name: Delete that repo 
+      github_repo:
+        github_auth_key: "{{github_token}}"
+        name: "Hello-World"
+        state: absent
   
