@@ -19,6 +19,23 @@ There are a couple alternatives:
 - use ansible.cfg library setting
 - use library dir inside a role — this is useful if you want to ship your module inside a role
 
+Ansible generally supports writing Modules in any language, e.g Python, C, Ruby, Shell, Go, … 
+The only requirements are: 
+	• The language needs to be able write JSON formatted output to STDOUT 
+
+Exiting the module 
+	• Exiting the module is done using ‘module.exit_json’ for successful returns, and ‘module.fail_json’ to fail the task 
+	  - Exit the module with the changed flag set and with additional variables returned to the Play 
+	  - Exit the module successfully, but signaling that there was no change 
+	  - Exit the module with a failure
+	  
+The directory ”./library”, alongside your top level playbooks, is also automatically added as a search directory
+tree -
+     - hosts
+     - library
+        - test_module.py
+     - test_play.yml
+ 
 Example Code
 ================
 #!/usr/bin/python
@@ -57,7 +74,7 @@ def main():
         "absent": github_repo_absent,
     }
 
-    module = AnsibleModule(argument_spec=fields)
+    module = AnsibleModule(argument_spec=fields)     # argument_spec should be dictionary
     is_error, has_changed, result = choice_map.get(
         module.params['state'])(module.params)
 
