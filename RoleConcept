@@ -82,4 +82,4 @@ users:
         - handlers
         - vars
         - templates
- 
+        - library         # dir inside a role — this is useful if you want to ship your module inside a role
