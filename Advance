@@ -34,3 +34,11 @@ The rescue statement defines a task that should run if an error is encountered i
           when: item is defined   
    You can simulate this by adding a new user to my_vars.yml file and running without the -b (become root) option.
      $ ansible-playbook add_user.yml -u ansible -i ./inventory
+
+Include task with condition
+----------------------------
+    - name: Include task list in play only if the condition is true
+      include: "{{ hostvar }}.yaml"
+      static: no
+      when: hostvar is defined
+
